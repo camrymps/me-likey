@@ -1,0 +1,28 @@
+{
+    "name": "camrymps/me-likey",
+    "description": "Reactions (like, dislike, etc.) package for Laravel applications.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Michael Scott",
+            "email": "camrymps@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Camrymps\\MeLikey\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests"
+        }
+    },
+    "require": {
+        "laravel/framework": "^6.0|^7.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^5.1",
+        "phpunit/phpunit": "^8.5"
+    }
+}
