@@ -15,7 +15,7 @@ class CreateReactionsTable extends Migration
     {
         Schema::create('reactions', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger(config('me-likey.user_foreign_key'));
+            $table->unsignedBigInteger(config('me-likey.user_foreign_key'));
             $table->morphs('reactionable');
             $table->string('type');
             $table->timestamps();
