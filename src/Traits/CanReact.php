@@ -28,11 +28,11 @@ trait CanReact
 
             // Nothing has changed
             return null;
-        } else { // If the reaction type is different, remove the old reaction and add the new one
+        } else {
             // Create a new reaction object
             $reaction = new Reaction;
 
-            // If there is an existing reaction, use remove it and use its ID for the new reaction
+            // If there is an existing reaction, remove it and use its ID for the new reaction
             if ($this->has_reacted($model)) {
                 // Give this reaction the same ID as the exiting reaction
                 $reaction->id = $this->get_reaction($model)->first()->id;
