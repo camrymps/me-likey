@@ -18,8 +18,6 @@ trait CanReact
      */
     public function react(Model $model, ReactionInterface $reaction_object)
     {
-        $response = [];
-
         // Get the namespace of the passed reaction object
         $reaction_type = get_class($reaction_object);
 
@@ -28,7 +26,7 @@ trait CanReact
             // Remove exiting reaction
             $this->unreact($model);
 
-            $response = null;
+            return null;
         } else {
             // Create a new reaction object
             $reaction = new Reaction;
@@ -43,7 +41,7 @@ trait CanReact
                 // Remove existing reaction
                 $this->unreact($model);
 
-                $response['removed'] = $old_reaction;
+                $reaction->replaced = $old_reaction->type;
             }
 
             // Set the reaction's user ID
@@ -55,14 +53,8 @@ trait CanReact
             // Save the reaction in the database
             $reaction = $model->reactions()->save($reaction);
 
-            if (array_key_exists('removed', $response)) {
-                $response['added'] = $reaction;
-            } else {
-                $response = $reaction;
-            }
+            return $reaction;
         }
-
-        return $response;
     }
 
     /**

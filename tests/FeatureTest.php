@@ -41,10 +41,9 @@ class FeatureTest extends TestCase
             ->where('reactionable_id', $post->id)
             ->first();
 
-        $this->assertInstanceOf(Reaction::class, $reaction['removed']);
-        $this->assertInstanceOf(Reaction::class, $reaction['added']);
-        $this->assertInstanceOf(Like::class, app($reaction['removed']->type));
-        $this->assertInstanceOf(Dislike::class, app($reaction['added']->type));
+        $this->assertInstanceOf(Reaction::class, $reaction);
+
+        $this->assertInstanceOf(Like::class, app($reaction->replaced));
 
         $this->assertInstanceOf(Reaction::class, $stored_reaction);
         $this->assertInstanceOf(Dislike::class, app($stored_reaction->type));
