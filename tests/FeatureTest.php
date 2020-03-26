@@ -34,15 +34,21 @@ class FeatureTest extends TestCase
         $post = Post::create(['title' => 'Test']);
 
         $user->react($post, new Like);
-        $user->react($post, new Dislike);
+        $reaction = $user->react($post, new Dislike);
 
         $stored_reaction = $user->reactions()
             ->where('reactionable_type', Post::class)
             ->where('reactionable_id', $post->id)
             ->first();
 
+        $this->assertInstanceOf(Reaction::class, $reaction['removed']);
+        $this->assertInstanceOf(Reaction::class, $reaction['added']);
+        $this->assertInstanceOf(Like::class, app($reaction['removed']->type));
+        $this->assertInstanceOf(Dislike::class, app($reaction['added']->type));
+
         $this->assertInstanceOf(Reaction::class, $stored_reaction);
         $this->assertInstanceOf(Dislike::class, app($stored_reaction->type));
+
         $this->assertEquals($post->id, $stored_reaction->id);
     }
 
@@ -53,8 +59,9 @@ class FeatureTest extends TestCase
         $post = Post::create(['title' => 'Test']);
 
         $user->react($post, new Like);
-        $user->react($post, new Like);
+        $reaction = $user->react($post, new Like);
 
+        $this->assertNull($reaction);
         $this->assertFalse($user->has_reacted($post));
     }
 
