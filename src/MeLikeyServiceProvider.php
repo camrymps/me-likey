@@ -36,6 +36,11 @@ class MeLikeyServiceProvider extends ServiceProvider
             \dirname(__DIR__) . '/migrations' => database_path('migrations'),
         ], 'migrations');
 
+        // Publish command(s)
+        $this->commands([
+            \Camrymps\MeLikey\Commands\CreateReaction::class
+        ]);
+
         // Load migration(s)
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(\dirname(__DIR__) . '/migrations');

@@ -91,4 +91,15 @@ class FeatureTest extends TestCase
         $this->assertInstanceOf(Like::class, app($third_reaction->type));
     }
 
+    public function test_commands()
+    {
+        \Artisan::call('reaction:create SuperLike');
+
+        $new_reaction_path = \dirname(__DIR__) . '/src/Reactions/SuperLike.php';
+
+        $this->assertTrue(\File::exists($new_reaction_path));
+
+        \File::delete($new_reaction_path);
+    }
+
 }
