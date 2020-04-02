@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Reaction extends Model
 {
-    protected $casts = ['type' => 'object'];
-
     /**
      * Get all of the models that own reactions.
      */
