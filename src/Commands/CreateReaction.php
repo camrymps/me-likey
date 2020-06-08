@@ -39,7 +39,7 @@ class CreateReaction extends Command
     {
         $file_contents = "<?php" . PHP_EOL . PHP_EOL .
                          "namespace Camrymps\MeLikey\Reactions;" . PHP_EOL . PHP_EOL .
-                         "class " . $this->argument('reaction_name') . " implements ReactionInterface" . PHP_EOL .
+                         "class " . $this->argument('reaction_name') . PHP_EOL .
                          "{" . PHP_EOL .
                          "}";
 
