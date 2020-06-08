@@ -2,6 +2,10 @@
 
 namespace Camrymps\MeLikey\Reactions;
 
-class Like implements ReactionInterface
+class Like
 {
+    /**
+     * @var string
+     */
+    public $friendly_name = 'like';
 }

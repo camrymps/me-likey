@@ -13,6 +13,6 @@ trait CanBeReacted
      */
     public function reactions()
     {
-        return $this->morphMany(Reaction::class, 'reactionable');
+        return $this->morphMany(config('me-likey.reaction_model'), 'reactionable');
     }
 }

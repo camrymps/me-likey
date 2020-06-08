@@ -17,8 +17,8 @@ class FeatureTest extends TestCase
         $post_1 = Post::create(['title' => 'Test 1']);
         $post_2 = Post::create(['title' => 'Test 2']);
 
-        $reaction_1 = $user->react($post_1, new Dislike);
-        $reaction_2 = $user->react($post_2, new Like);
+        $reaction_1 = $user->react($post_1, 'dislike');
+        $reaction_2 = $user->react($post_2, 'like');
 
         $this->assertInstanceOf(Reaction::class, $reaction_1);
         $this->assertInstanceOf(Dislike::class, app($reaction_1->type));
@@ -33,8 +33,8 @@ class FeatureTest extends TestCase
 
         $post = Post::create(['title' => 'Test']);
 
-        $user->react($post, new Like);
-        $reaction = $user->react($post, new Dislike);
+        $user->react($post, 'like');
+        $reaction = $user->react($post, 'dislike');
 
         $stored_reaction = $user->reactions()
             ->where('reactionable_type', Post::class)
@@ -43,7 +43,8 @@ class FeatureTest extends TestCase
 
         $this->assertInstanceOf(Reaction::class, $reaction);
 
-        $this->assertInstanceOf(Like::class, app($reaction->replaced));
+        $this->assertInstanceOf(Reaction::class, $reaction->replaced);
+        $this->assertInstanceOf(Like::class, app($reaction->replaced->type));
 
         $this->assertInstanceOf(Reaction::class, $stored_reaction);
         $this->assertInstanceOf(Dislike::class, app($stored_reaction->type));
@@ -57,10 +58,11 @@ class FeatureTest extends TestCase
 
         $post = Post::create(['title' => 'Test']);
 
-        $user->react($post, new Like);
-        $reaction = $user->react($post, new Like);
+        $user->react($post, 'like');
+        $reaction = $user->react($post, 'like');
 
-        $this->assertNull($reaction);
+        $this->assertInstanceOf(Like::class, app($reaction->type));
+        $this->assertTrue($reaction->revoked);
         $this->assertFalse($user->has_reacted($post));
     }
 
@@ -72,9 +74,9 @@ class FeatureTest extends TestCase
         $post_2 = Post::create(['title' => 'Test 2']);
         $post_3 = Post::create(['title' => 'Test 3']);
 
-        $user->react($post_1, new Dislike);
-        $user->react($post_2, new Like);
-        $user->react($post_3, new Like);
+        $user->react($post_1, 'dislike');
+        $user->react($post_2, 'like');
+        $user->react($post_3, 'like');
 
         $reactions = $user->reactions();
 

@@ -14,34 +14,41 @@ trait CanReact
      * Performs a reaction, or removes an existing one.
      *
      * @param Model $model
-     * @param ReactionInterface $reaction_object
+     * @param string $reaction_friendly_name
      */
-    public function react(Model $model, ReactionInterface $reaction_object)
+    public function react(Model $model, string $reaction_friendly_name)
     {
-        // Get the namespace of the passed reaction object
-        $reaction_type = get_class($reaction_object);
+        $reactions = $this->get_reactions($model);
 
-        // If the reaction type is the same as the exiting one made by this user, remove the existing reaction
-        if ($this->has_reacted($model) && $this->get_reaction($model)->first()->type === $reaction_type) {
+        // Get the namespace of the passed reaction object
+        $reaction_type_class = app(\Camrymps\MeLikey\Reactions::class . '\\' . ucfirst($reaction_friendly_name));
+        $reaction_type = get_class($reaction_type_class);
+
+        // If the reaction type is the same as the exiting one made by this user, remove the existing reaction (revoke)
+        if ($this->has_reacted($model) && $reactions->first()->type === $reaction_type) {
+            $revoked_reaction = $reactions->first();
+
+            $revoked_reaction->revoked = true;
+
             // Remove exiting reaction
             $this->unreact($model);
 
-            return null;
+            return $revoked_reaction;
         } else {
             // Create a new reaction object
             $reaction = new Reaction;
 
-            // If there is an existing reaction, remove it and use its ID for the new reaction
+            // If there is an existing reaction, remove it and use its ID for the new reaction (replace)
             if ($this->has_reacted($model)) {
-                $old_reaction = $this->get_reaction($model)->first();
+                $replaced_reaction = $reactions->first();
 
                 // Give this reaction the same ID as the exiting reaction
-                $reaction->id = $old_reaction->id;
+                $reaction->id = $replaced_reaction->id;
 
                 // Remove existing reaction
                 $this->unreact($model);
 
-                $reaction->replaced = $old_reaction->type;
+                $reaction->replaced = $replaced_reaction;
             }
 
             // Set the reaction's user ID
@@ -64,7 +71,12 @@ trait CanReact
      */
     private function unreact(Model $model)
     {
-        $this->get_reaction($model)->delete();
+        // $this->get_reaction($model)->delete();
+        $reaction = $this->get_reactions($model)->first();
+
+        if (!is_null($reaction)) {
+            $reaction->delete();
+        }
     }
 
     /**
@@ -73,7 +85,7 @@ trait CanReact
     public function reactions()
     {
         return $this->hasMany(
-            Reaction::class,
+            config('me-likey.reaction_model'),
             config('me-likey.user_foreign_key'),
             $this->getKeyName()
         );
@@ -86,20 +98,23 @@ trait CanReact
      */
     public function has_reacted(Model $model)
     {
-        return $this->get_reaction($model)
-            ->exists();
+        $reactions = $this->get_reactions($model);
+
+        return !is_null($reactions) && $reactions->exists() ? true : false;
     }
 
     /**
-     * Gets the reactions made by this entity to a specific model.
+     * Gets the reactions made by this entity on a specific model.
      *
      * @param Model $model
      */
-    private function get_reaction(Model $model)
+    private function get_reactions(Model $model)
     {
-        return $model->reactions()
-            ->where('reactionable_id', $model->getKey())
-            ->where('reactionable_type', $model->getMorphClass())
-            ->where(config('me-likey.user_foreign_key'), $this->getKey());
+        return !is_null($this->reactions()) ?
+            $this->reactions()
+                ->where('reactionable_id', $model->getKey())
+                ->where('reactionable_type', $model->getMorphClass())
+                ->where(config('me-likey.user_foreign_key'), $this->getKey())
+            : null;
     }
 }

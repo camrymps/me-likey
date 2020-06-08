@@ -18,8 +18,6 @@ class CreateReactionsTable extends Migration
             $table->unsignedBigInteger(config('me-likey.user_foreign_key'));
             $table->morphs('reactionable');
             $table->string('type');
-            $table->string('replaced')
-                ->nullable();
             $table->timestamps();
         });
     }
