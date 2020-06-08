@@ -41,6 +41,7 @@ class CreateReaction extends Command
                          "namespace Camrymps\MeLikey\Reactions;" . PHP_EOL . PHP_EOL .
                          "class " . $this->argument('reaction_name') . PHP_EOL .
                          "{" . PHP_EOL .
+                         "use ReactionTrait;" . PHP_EOL .
                          "}";
 
         \File::put(
