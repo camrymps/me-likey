@@ -93,6 +93,15 @@ class FeatureTest extends TestCase
         $this->assertInstanceOf(Like::class, app($third_reaction->type));
     }
 
+    public function test_reaction_trait()
+    {
+        $like = app(Like::class);
+        $dislike = app(Dislike::class);
+
+        $this->assertEquals('like', $like->get_friendly_name());
+        $this->assertEquals('dislike', $dislike->get_friendly_name());
+    }
+
     public function test_commands()
     {
         \Artisan::call('reaction:create SuperLike');
