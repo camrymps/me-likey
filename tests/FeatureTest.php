@@ -112,5 +112,4 @@ class FeatureTest extends TestCase
 
         \File::delete($new_reaction_path);
     }
-
 }

@@ -4,8 +4,6 @@ namespace Camrymps\MeLikey\Traits;
 
 use Illuminate\Database\Eloquent\Model;
 
-use Camrymps\MeLikey\Reaction;
-
 trait CanBeReacted
 {
     /**

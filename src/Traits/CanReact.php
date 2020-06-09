@@ -4,12 +4,8 @@ namespace Camrymps\MeLikey\Traits;
 
 use Illuminate\Database\Eloquent\Model;
 
-use Camrymps\MeLikey\Reaction;
-use Camrymps\MeLikey\Reactions\ReactionInterface;
-
 trait CanReact
 {
-
     /**
      * Performs a reaction, or removes an existing one.
      *
@@ -18,47 +14,60 @@ trait CanReact
      */
     public function react(Model $model, string $reaction_friendly_name)
     {
-        $reactions = $this->get_reactions($model);
+        $reaction_model = app(config('me-likey.reaction_model'));
 
         // Get the namespace of the passed reaction object
         $reaction_type_class = app(\Camrymps\MeLikey\Reactions::class . '\\' . ucfirst($reaction_friendly_name));
         $reaction_type = get_class($reaction_type_class);
 
         // If the reaction type is the same as the exiting one made by this user, remove the existing reaction (revoke)
-        if ($this->has_reacted($model) && $reactions->first()->type === $reaction_type) {
-            $revoked_reaction = $reactions->first();
+        if ($this->has_reacted($model)) {
+            // Get the reaction that currently exists on this model
+            $current_reaction = $this->get_reactions($model, true)->first();
 
-            $revoked_reaction->revoked = true;
+            // If the current reaction type is the same as the new reaction type...
+            if ($current_reaction->type === $reaction_type) {
+                $current_reaction->revoked = true;
 
-            // Remove exiting reaction
-            $this->unreact($model);
+                // Remove exiting reaction
+                $this->unreact($model);
 
-            return $revoked_reaction;
-        } else {
-            // Create a new reaction object
-            $reaction = new Reaction;
-
-            // If there is an existing reaction, remove it and use its ID for the new reaction (replace)
-            if ($this->has_reacted($model)) {
-                $replaced_reaction = $reactions->first();
+                return $current_reaction;
+            } else { // There is an existing reaction. Remove the existing reaction and replace with the new one
+                // Create a new reaction object
+                $new_reaction = new $reaction_model;
 
                 // Give this reaction the same ID as the exiting reaction
-                $reaction->id = $replaced_reaction->id;
+                $new_reaction->id = $current_reaction->id;
+
+                // Set the reaction's user ID
+                $new_reaction->{config('me-likey.user_foreign_key')} = $this->getKey();
+
+                // Set the reaction's type
+                $new_reaction->type = $reaction_type;
+
+                $new_reaction->replaced = $current_reaction;
 
                 // Remove existing reaction
                 $this->unreact($model);
 
-                $reaction->replaced = $replaced_reaction;
+                // Save the new reaction in the database
+                $reaction = $model->reactions()->save($new_reaction);
+
+                return $reaction;
             }
+        } else {
+            // Create a new reaction object
+            $new_reaction = new $reaction_model;
 
             // Set the reaction's user ID
-            $reaction->{config('me-likey.user_foreign_key')} = $this->getKey();
+            $new_reaction->{config('me-likey.user_foreign_key')} = $this->getKey();
 
             // Set the reaction's type
-            $reaction->type = $reaction_type;
+            $new_reaction->type = $reaction_type;
 
             // Save the reaction in the database
-            $reaction = $model->reactions()->save($reaction);
+            $reaction = $model->reactions()->save($new_reaction);
 
             return $reaction;
         }
@@ -71,10 +80,9 @@ trait CanReact
      */
     private function unreact(Model $model)
     {
-        // $this->get_reaction($model)->delete();
-        $reaction = $this->get_reactions($model)->first();
+        $reaction = $this->get_reactions($model, true)->first();
 
-        if (!is_null($reaction)) {
+        if ($reaction) {
             $reaction->delete();
         }
     }
@@ -100,21 +108,26 @@ trait CanReact
     {
         $reactions = $this->get_reactions($model);
 
-        return !is_null($reactions) && $reactions->exists() ? true : false;
+        return $reactions->exists() ? true : false;
     }
 
     /**
      * Gets the reactions made by this entity on a specific model.
      *
      * @param Model $model
+     * @param bool $include_user_filter
      */
-    private function get_reactions(Model $model)
+    private function get_reactions(Model $model, bool $include_user_filter = false)
     {
-        return !is_null($this->reactions()) ?
-            $this->reactions()
-                ->where('reactionable_id', $model->getKey())
-                ->where('reactionable_type', $model->getMorphClass())
-                ->where(config('me-likey.user_foreign_key'), $this->getKey())
-            : null;
+        $reactions = $this->reactions()
+            ->where('reactionable_id', $model->getKey())
+            ->where('reactionable_type', $model->getMorphClass());
+
+        if ($include_user_filter) {
+            return $reactions
+                ->where(config('me-likey.user_foreign_key'), $this->getKey());
+        }
+
+        return $reactions;
     }
 }
