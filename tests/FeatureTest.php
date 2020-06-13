@@ -112,4 +112,17 @@ class FeatureTest extends TestCase
 
         \File::delete($new_reaction_path);
     }
+
+    public function test_reaction_types_method()
+    {
+        $reaction_types = Reaction::types();
+
+        $this->assertInstanceOf(Like::class, $reaction_types[0]);
+        $this->assertInstanceOf(Dislike::class, $reaction_types[1]);
+
+        $reaction_types_with_friendly_name = Reaction::types(true);
+
+        $this->assertEquals('like', $reaction_types_with_friendly_name[0]);
+        $this->assertEquals('dislike', $reaction_types_with_friendly_name[1]);
+    }
 }
