@@ -25,5 +25,10 @@ return [
     'sort_positions' => [
         'like' => 1,
         'dislike' => 2
-    ]
+    ],
+
+    /**
+     * Disabled reaction types
+     */
+    'disabled' => []
 ];

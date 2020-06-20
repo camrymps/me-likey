@@ -3,6 +3,7 @@
 namespace Camrymps\MeLikey\Traits;
 
 use Illuminate\Database\Eloquent\Model;
+use Camrymps\MeLikey\Reaction;
 
 trait CanReact
 {
@@ -14,31 +15,51 @@ trait CanReact
      */
     public function react(Model $model, string $reaction_friendly_name)
     {
-        $reaction_model = app(config('me-likey.reaction_model'));
+        if (!in_array($reaction_friendly_name, config('me-likey.disabled'))) {
+            $reaction_model = app(config('me-likey.reaction_model'));
 
-        // Get the namespace of the passed reaction object
-        $reaction_type_class = app(\Camrymps\MeLikey\Reactions::class . '\\' . ucfirst($reaction_friendly_name));
-        $reaction_type = get_class($reaction_type_class);
+            // Get the namespace of the passed reaction object
+            $reaction_type = get_class(Reaction::get_type_by_friendly_name($reaction_friendly_name));
 
-        // If the reaction type is the same as the exiting one made by this user, remove the existing reaction (revoke)
-        if ($this->has_reacted($model)) {
-            // Get the reaction that currently exists on this model
-            $current_reaction = $this->get_reactions($model, true)->first();
+            // If the reaction type is the same as the exiting one made by this user, remove the existing reaction (revoke)
+            if ($this->has_reacted($model)) {
+                // Get the reaction that currently exists on this model
+                $current_reaction = $this->get_reactions($model, true)->first();
 
-            // If the current reaction type is the same as the new reaction type...
-            if ($current_reaction->type === $reaction_type) {
-                $current_reaction->revoked = true;
+                // If the current reaction type is the same as the new reaction type...
+                if ($current_reaction->type === $reaction_type) {
+                    $current_reaction->revoked = true;
 
-                // Remove exiting reaction
-                $this->unreact($model);
+                    // Remove exiting reaction
+                    $this->unreact($model);
 
-                return $current_reaction;
-            } else { // There is an existing reaction. Remove the existing reaction and replace with the new one
+                    return $current_reaction;
+                } else { // There is an existing reaction. Remove the existing reaction and replace with the new one
+                    // Create a new reaction object
+                    $new_reaction = new $reaction_model;
+
+                    // Give this reaction the same ID as the exiting reaction
+                    $new_reaction->id = $current_reaction->id;
+
+                    // Set the reaction's user ID
+                    $new_reaction->{config('me-likey.user_foreign_key')} = $this->getKey();
+
+                    // Set the reaction's type
+                    $new_reaction->type = $reaction_type;
+
+                    $new_reaction->replaced = $current_reaction;
+
+                    // Remove existing reaction
+                    $this->unreact($model);
+
+                    // Save the new reaction in the database
+                    $reaction = $model->reactions()->save($new_reaction);
+
+                    return $reaction;
+                }
+            } else {
                 // Create a new reaction object
                 $new_reaction = new $reaction_model;
-
-                // Give this reaction the same ID as the exiting reaction
-                $new_reaction->id = $current_reaction->id;
 
                 // Set the reaction's user ID
                 $new_reaction->{config('me-likey.user_foreign_key')} = $this->getKey();
@@ -46,30 +67,13 @@ trait CanReact
                 // Set the reaction's type
                 $new_reaction->type = $reaction_type;
 
-                $new_reaction->replaced = $current_reaction;
-
-                // Remove existing reaction
-                $this->unreact($model);
-
-                // Save the new reaction in the database
+                // Save the reaction in the database
                 $reaction = $model->reactions()->save($new_reaction);
 
                 return $reaction;
             }
         } else {
-            // Create a new reaction object
-            $new_reaction = new $reaction_model;
-
-            // Set the reaction's user ID
-            $new_reaction->{config('me-likey.user_foreign_key')} = $this->getKey();
-
-            // Set the reaction's type
-            $new_reaction->type = $reaction_type;
-
-            // Save the reaction in the database
-            $reaction = $model->reactions()->save($new_reaction);
-
-            return $reaction;
+            throw new \ErrorException('Reaction type is disabled.');
         }
     }
 
@@ -96,7 +100,9 @@ trait CanReact
             config('me-likey.reaction_model'),
             config('me-likey.user_foreign_key'),
             $this->getKeyName()
-        );
+        )->whereNotIn('type', array_map(function($disabled_friendly_name) {
+            return get_class(Reaction::get_type_by_friendly_name($disabled_friendly_name));
+        }, config('me-likey.disabled')));
     }
 
     /**

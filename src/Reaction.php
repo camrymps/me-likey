@@ -33,11 +33,12 @@ class Reaction extends Model
     }
 
     /**
-     * Lists, and sorts, all of the reaction types (like, dislike, etc.).
+     * Lists, and sorts all of the reaction types (like, dislike, etc.).
      *
      * @param bool $friendly_names
+     * @param bool $include_disabled
      */
-    public static function types($friendly_names = false)
+    public static function types(bool $friendly_names = false, bool $include_disabled = false)
     {
         $reaction_types = [];
         $reaction_paths = glob(__DIR__ . '/Reactions/*[!Trait].php');
@@ -45,18 +46,20 @@ class Reaction extends Model
         foreach($reaction_paths as $reaction_path) {
             $path_parts = explode('/', $reaction_path);
             $reaction_filename = end($path_parts);
-            $reaction_type = \Camrymps\MeLikey\Reactions::class . '\\' . substr($reaction_filename, 0, strpos($reaction_filename, '.php'));
+            $reaction_type = app(\Camrymps\MeLikey\Reactions::class . '\\' . substr($reaction_filename, 0, strpos($reaction_filename, '.php')));
 
-            if ($friendly_names) {
-                array_push($reaction_types, app($reaction_type)->get_friendly_name());
+            if ($include_disabled) {
+                array_push($reaction_types, $reaction_type);
             } else {
-                array_push($reaction_types, app($reaction_type));
+                if (!in_array($reaction_type->get_friendly_name(), config('me-likey.disabled'))) {
+                    array_push($reaction_types, $reaction_type);
+                }
             }
         }
 
-        usort($reaction_types, function($cur, $nxt) use ($friendly_names) {
-            $csp_index = $friendly_names ? $cur : $cur->get_friendly_name();
-            $nsp_index = $friendly_names ? $nxt : $nxt->get_friendly_name();
+        usort($reaction_types, function($cur, $nxt) {
+            $csp_index = $cur->get_friendly_name();
+            $nsp_index = $nxt->get_friendly_name();
 
             $csp = array_key_exists($csp_index, config('me-likey.sort_positions')) ? config('me-likey.sort_positions')[$csp_index] : 0;
             $nsp = array_key_exists($nsp_index, config('me-likey.sort_positions')) ? config('me-likey.sort_positions')[$nsp_index] : 0;
@@ -68,7 +71,31 @@ class Reaction extends Model
             return ($csp < $nsp) ? -1 : 1;
         });
 
+        if ($friendly_names) {
+            $reaction_types = array_map(function($reaction_type) {
+                return $reaction_type->get_friendly_name();
+            }, $reaction_types);
+        }
+
         return $reaction_types;
+    }
+
+    /**
+     * Get a reaction type by friendly name.
+     *
+     * @param string $friendly_name
+     */
+    public static function get_type_by_friendly_name(string $friendly_name)
+    {
+        $reaction_types = self::types(false, true);
+
+        foreach($reaction_types as $reaction_type) {
+            if ($reaction_type->get_friendly_name() === $friendly_name) {
+                return $reaction_type;
+            }
+        }
+
+        return null;
     }
 
     /**

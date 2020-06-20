@@ -125,4 +125,37 @@ class FeatureTest extends TestCase
         $this->assertEquals('like', $reaction_types_with_friendly_name[0]);
         $this->assertEquals('dislike', $reaction_types_with_friendly_name[1]);
     }
+
+    public function test_disabled_in_reaction_types_method()
+    {
+        config(['me-likey.disabled' => ['dislike']]);
+
+        $reaction_types = Reaction::types();
+
+        $this->assertEquals(1, count($reaction_types));
+        $this->assertInstanceOf(Like::class, $reaction_types[0]);
+
+        $reaction_types_with_friendly_name = Reaction::types(true);
+
+        $this->assertEquals(1, count($reaction_types_with_friendly_name));
+        $this->assertEquals('like', $reaction_types_with_friendly_name[0]);
+    }
+
+    public function test_disabled_reaction_types() {
+        $user = User::create(['username' => 'testing']);
+
+        $post_1 = Post::create(['title' => 'Test 1']);
+        $post_2 = Post::create(['title' => 'Test 2']);
+        $post_3 = Post::create(['title' => 'Test 3']);
+
+        $user->react($post_1, 'like');
+        $user->react($post_2, 'dislike');
+
+        config(['me-likey.disabled' => ['dislike']]);
+
+        $this->expectException(\ErrorException::class);
+        $this->expectExceptionMessage('Reaction type is disabled.');
+
+        $user->react($post_3, 'dislike');
+    }
 }
