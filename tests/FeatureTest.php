@@ -142,20 +142,23 @@ class FeatureTest extends TestCase
     }
 
     public function test_disabled_reaction_types() {
-        $user = User::create(['username' => 'testing']);
+        $user_1 = User::create(['username' => 'testing_1']);
+        $user_2 = User::create(['username' => 'testing_2']);
 
         $post_1 = Post::create(['title' => 'Test 1']);
-        $post_2 = Post::create(['title' => 'Test 2']);
-        $post_3 = Post::create(['title' => 'Test 3']);
 
-        $user->react($post_1, 'like');
-        $user->react($post_2, 'dislike');
+        $user_1->react($post_1, 'like');
+        $user_2->react($post_1, 'dislike');
 
         config(['me-likey.disabled' => ['dislike']]);
+
+        $this->assertEquals(1, $post_1->reactions()->count());
+        $this->assertInstanceOf(Like::class, app($post_1->reactions()->first()->type));
+        $this->assertEquals(0, $user_2->reactions()->count());
 
         $this->expectException(\ErrorException::class);
         $this->expectExceptionMessage('Reaction type is disabled.');
 
-        $user->react($post_3, 'dislike');
+        $user_1->react($post_1, 'dislike');
     }
 }
