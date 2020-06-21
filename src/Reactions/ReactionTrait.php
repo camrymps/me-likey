@@ -12,6 +12,6 @@ trait ReactionTrait
         $class_name = static::class;
         $class_name_parts = explode('\\', $class_name);
 
-        return lcfirst(end($class_name_parts));
+        return strtolower(end($class_name_parts));
     }
 }
