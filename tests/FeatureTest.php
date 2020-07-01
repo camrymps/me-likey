@@ -161,4 +161,24 @@ class FeatureTest extends TestCase
 
         $user_1->react($post_1, 'dislike');
     }
+
+    public function test_reaction_type_counts_helper_method() {
+        $user_1 = User::create(['username' => 'testing_1']);
+        $user_2 = User::create(['username' => 'testing_2']);
+
+        $post_1 = Post::create(['title' => 'Test 1']);
+
+        $user_1->react($post_1, 'like');
+        $user_2->react($post_1, 'like');
+
+        $friendly_named_type_counts = $post_1->get_reaction_type_counts(true);
+
+        $this->assertEquals(2, $friendly_named_type_counts['like']);
+        $this->assertEquals(0, $friendly_named_type_counts['dislike']);
+
+        $type_counts = $post_1->get_reaction_type_counts();
+
+        $this->assertEquals(2, $type_counts['Camrymps\MeLikey\Reactions\Like']);
+        $this->assertEquals(0, $type_counts['Camrymps\MeLikey\Reactions\Dislike']);
+    }
 }
